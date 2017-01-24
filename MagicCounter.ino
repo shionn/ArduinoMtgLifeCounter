@@ -1,24 +1,26 @@
 
 #include <LiquidCrystal.h>
 
-#define LCD_RS 6
-#define LCD_E 7
-#define LCD_D4 8
-#define LCD_D5 9
-#define LCD_D6 10
-#define LCD_D7 11
+#define LCD_RS 8
+#define LCD_E 9
+#define LCD_D4 4
+#define LCD_D5 5
+#define LCD_D6 6
+#define LCD_D7 7
 
-#define P1UP_K 3
-#define P1DO_K 2
-#define P2UP_K 12
-#define P2DO_K 13
-#define SWITCH_K 4
+#define P_BUTTON A0
 
-#define P1UP keys[0]
-#define P1DO keys[1]
-#define P2UP keys[2]
-#define P2DO keys[3]
-#define SWITCH keys[4]
+#define UP_K 1
+#define DOWN_K 2
+#define LEFT_K 3
+#define RIGHT_K 4
+#define SWITCH_K 5
+
+#define UP button == UP_K
+#define DOWN button == DOWN_K
+#define LEFT button == LEFT_K
+#define RIGHT button == RIGHT_K
+#define SWITCH button == SWITCH_K
 
 #define MAX_PLAYERS 4
 
@@ -46,17 +48,10 @@ EditModeType edit = pv;
 PlayerType players[MAX_PLAYERS];
 int nbPlayer = 2;
 int currentPlayer = 0; // utilisé que pour le multi
-
-bool keys[5];
+int button = 0;
 
 void setup() {
   
-  pinMode(P1UP_K, INPUT_PULLUP);
-  pinMode(P1DO_K, INPUT_PULLUP);
-  pinMode(P2UP_K, INPUT_PULLUP);
-  pinMode(P2DO_K, INPUT_PULLUP);
-  pinMode(SWITCH_K, INPUT_PULLUP);
-
   lcd.begin(16,2);
 
   byte heart[8] = { B00000, B01010, B11111, B11111, B01110, B00100, B00000, B00000 };
@@ -110,10 +105,10 @@ void selectGameMode() {
         break;
     }
     onePressed();
-    if (P1UP || P2UP) {
+    if (UP || RIGHT) {
       game = game == edh ? duel : (GameModeType)((int)game+1);
     }
-    if (P1DO || P2DO) {
+    if (DOWN || LEFT) {
       game = game == duel ? edh : (GameModeType)((int)game-1);
     }
     if (SWITCH) {
@@ -132,10 +127,10 @@ void selectNbPlayer() {
     lcd.setCursor(6,1);
     lcd.print(nbPlayer);
     onePressed();
-    if (P1UP || P2UP) {
+    if (UP || RIGHT) {
       nbPlayer = nbPlayer == MAX_PLAYERS ? 2 : nbPlayer+1;
     }
-    if (P1DO || P2DO) {
+    if (DOWN || LEFT) {
       nbPlayer = nbPlayer == 2 ? MAX_PLAYERS : nbPlayer-1;
     }
     if (SWITCH) {
@@ -232,29 +227,29 @@ void updateKeys() {
   }
 
   if (nbPlayer == 2) {
-    if (P1UP) {
+    if (UP) {
       upPlayer(0);
     }
-    if (P1DO) {
+    if (DOWN) {
       downPlayer(0);
     }
-    if (P2UP) {
+    if (LEFT) {
       upPlayer(1);
     }
-    if (P2DO) {
+    if (RIGHT) {
       downPlayer(1);
     }
   } else {
-    if (P1UP) {
+    if (UP) {
       upPlayer(currentPlayer);
     }
-    if (P1DO) {
+    if (DOWN) {
       downPlayer(currentPlayer);
     }
-    if (P2UP) {
+    if (RIGHT) {
       currentPlayer = (currentPlayer+1) % nbPlayer;
     }
-    if (P2DO) {
+    if (LEFT) {
       currentPlayer = (currentPlayer+nbPlayer-1) % nbPlayer;
     }
   }
@@ -280,7 +275,7 @@ void downPlayer(int p) {
 }
 void onePressed() {
   refreshKeys();
-  while (!(P1UP || P1DO || P2UP || P2DO || SWITCH)) { 
+  while (!button) { 
     delay(1);
     refreshKeys();
   };
@@ -288,7 +283,7 @@ void onePressed() {
 
 void allReleased() {
   refreshKeys();
-  while (P1UP || P1DO || P2UP || P2DO || SWITCH) { 
+  while (button) { 
     delay(1);
     refreshKeys();
   };
@@ -296,10 +291,12 @@ void allReleased() {
 
 void refreshKeys() {
   random();
-  keys[0] = digitalRead(P1UP_K) == LOW;
-  keys[1] = digitalRead(P1DO_K) == LOW;
-  keys[2] = digitalRead(P2UP_K) == LOW;
-  keys[3] = digitalRead(P2DO_K) == LOW;
-  keys[4] = digitalRead(SWITCH_K) == LOW;
+  int value = analogRead(A0);
+  if (value < 50) button = RIGHT_K; 
+  else if (value < 195) button = UP_K;
+  else if (value < 380) button = DOWN_K;
+  else if (value < 555) button = LEFT_K;
+  else if (value < 790) button = SWITCH_K;  
+  else button = 0;
 }
 
